@@ -88,9 +88,9 @@ const Checkout = () => {
           description: "Redirecionando para o checkout do ASAAS...",
         });
         
-        // Redirecionar para a URL de pagamento do ASAAS
-        if (data.paymentUrl) {
-          window.location.href = data.paymentUrl;
+        // Redirecionar para o checkout do ASAAS
+        if (data.checkoutUrl) {
+          window.location.href = data.checkoutUrl;
         } else {
           navigate("/dashboard");
         }

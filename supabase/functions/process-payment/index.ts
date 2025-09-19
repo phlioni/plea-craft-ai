@@ -88,38 +88,65 @@ serve(async (req) => {
       console.log('New customer created:', customerId);
     }
 
-    // Criar assinatura recorrente
-    const subscriptionResponse = await fetch('https://sandbox.asaas.com/api/v3/subscriptions', {
+    // Criar checkout session para assinatura recorrente
+    const checkoutResponse = await fetch('https://sandbox.asaas.com/api/v3/checkoutSession', {
       method: 'POST',
       headers: {
         'access_token': asaasApiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        customer: customerId,
-        billingType: 'CREDIT_CARD',
-        value: value,
-        cycle: 'MONTHLY',
-        nextDueDate: new Date().toISOString().split('T')[0], // Primeira cobrança hoje
-        description: description,
+        billingTypes: ['CREDIT_CARD'],
+        chargeTypes: ['RECURRENT'],
+        minutesToExpire: 100,
+        callback: {
+          successUrl: "https://pialieyxsjpgaxzytpyn.lovableproject.com/dashboard",
+          cancelUrl: "https://pialieyxsjpgaxzytpyn.lovableproject.com/checkout"
+        },
+        items: [
+          {
+            description: description,
+            name: "Plano Mensal - Serviços Jurídicos",
+            quantity: 1,
+            value: value
+          }
+        ],
+        customerData: {
+          name: customer.name,
+          cpfCnpj: customer.cpf.replace(/\D/g, ''),
+          email: customer.email,
+          phone: customer.phone.replace(/\D/g, ''),
+          address: customer.address,
+          addressNumber: "S/N",
+          city: customer.city,
+          province: customer.state,
+          postalCode: customer.cep.replace(/\D/g, '')
+        },
+        subscription: {
+          cycle: 'MONTHLY',
+          nextDueDate: new Date().toISOString().split('T')[0]
+        }
       }),
     });
 
-    if (!subscriptionResponse.ok) {
-      const errorText = await subscriptionResponse.text();
-      console.error('Failed to create subscription:', errorText);
-      throw new Error(`Failed to create subscription: ${errorText}`);
+    if (!checkoutResponse.ok) {
+      const errorText = await checkoutResponse.text();
+      console.error('Failed to create checkout session:', errorText);
+      throw new Error(`Failed to create checkout session: ${errorText}`);
     }
 
-    const subscription = await subscriptionResponse.json();
-    console.log('Subscription created successfully:', subscription.id);
+    const checkoutSession = await checkoutResponse.json();
+    console.log('Checkout session created successfully:', checkoutSession.id);
+
+    // URL do checkout ASAAS
+    const checkoutUrl = `https://asaas.com/checkoutSession/show?id=${checkoutSession.id}`;
 
     return new Response(
       JSON.stringify({
         success: true,
-        subscriptionId: subscription.id,
-        paymentUrl: subscription.invoiceUrl,
-        message: 'Assinatura criada com sucesso! Você será redirecionado para finalizar o pagamento.',
+        checkoutId: checkoutSession.id,
+        checkoutUrl: checkoutUrl,
+        message: 'Checkout criado com sucesso! Redirecionando para o pagamento.',
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
