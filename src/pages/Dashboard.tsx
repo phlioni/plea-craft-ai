@@ -184,9 +184,20 @@ const Dashboard = () => {
 
       if (error) throw error;
 
-      const fileName = `peticao_inicial_${caseId}.rtf`;
+      // Buscar informações do caso para nome do arquivo
+      const caseData = cases.find(c => c.id === caseId);
+      const caseNumber = caseData?.case_number || caseId.substring(0, 8);
+      const title = caseData?.title || 'Documento_Juridico';
+      
+      const fileExtension = documentUrl.includes('.docx') ? '.docx' : 
+                          documentUrl.includes('.rtf') ? '.rtf' : '.html';
+      
+      const fileName = `${caseNumber}_${title.replace(/[^a-zA-Z0-9\-_]/g, '_')}${fileExtension}`;
 
-      const blob = new Blob([data], { type: 'application/rtf' });
+      const mimeType = fileExtension === '.docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' :
+                      fileExtension === '.rtf' ? 'application/rtf' : 'text/html';
+
+      const blob = new Blob([data], { type: mimeType });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

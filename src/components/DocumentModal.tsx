@@ -159,9 +159,13 @@ const DocumentModal = ({ case: caseItem, isOpen, onClose, onUpdate }: DocumentMo
 
       if (error) throw error;
 
+      const caseNumber = caseItem.case_number || caseItem.id.substring(0, 8);
+      const title = caseItem.title || 'Documento_Juridico';
+      
       const fileExtension = caseItem.generated_document_url.includes('.docx') ? '.docx' : 
                           caseItem.generated_document_url.includes('.rtf') ? '.rtf' : '.html';
-      const fileName = `${caseItem.case_number}_${caseItem.title}${fileExtension}`;
+      
+      const fileName = `${caseNumber}_${title.replace(/[^a-zA-Z0-9\-_]/g, '_')}${fileExtension}`;
 
       const mimeType = fileExtension === '.docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' :
                       fileExtension === '.rtf' ? 'application/rtf' : 'text/html';
