@@ -63,7 +63,7 @@ serve(async (req) => {
       customerId = searchResult.data[0].id;
       console.log('Existing customer found:', customerId);
     } else {
-      // Criar novo cliente
+      // Criar novo cliente seguindo documentação ASAAS
       const createCustomerResponse = await fetch('https://sandbox.asaas.com/api/v3/customers', {
         method: 'POST',
         headers: {
@@ -72,18 +72,8 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           name: customer.name,
-          email: customer.email,
-          phone: customer.phone.replace(/\D/g, ''), // Remove formatação
-          mobilePhone: customer.phone.replace(/\D/g, ''),
           cpfCnpj: customer.cpf.replace(/\D/g, ''), // Remove formatação
-          postalCode: customer.cep.replace(/\D/g, ''),
-          address: customer.address,
-          addressNumber: "S/N",
-          complement: "",
-          province: customer.city,
-          city: customer.city,
-          state: customer.state,
-          country: "Brasil"
+          mobilePhone: customer.phone.replace(/\D/g, ''), // Remove formatação
         }),
       });
 
@@ -98,8 +88,8 @@ serve(async (req) => {
       console.log('New customer created:', customerId);
     }
 
-    // Criar cobrança
-    const paymentResponse = await fetch('https://sandbox.asaas.com/api/v3/payments', {
+    // Criar cobrança usando endpoint lean/payments
+    const paymentResponse = await fetch('https://sandbox.asaas.com/api/v3/lean/payments', {
       method: 'POST',
       headers: {
         'access_token': asaasApiKey,
@@ -107,13 +97,9 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         customer: customerId,
-        billingType: 'UNDEFINED', // Permite escolher na hora do pagamento
+        billingType: 'CREDIT_CARD',
         value: value,
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 dias
-        description: description,
-        externalReference: `legal-case-${Date.now()}`,
-        installmentCount: 1,
-        installmentValue: value,
       }),
     });
 
@@ -130,10 +116,8 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         paymentId: payment.id,
-        invoiceUrl: payment.invoiceUrl,
-        bankSlipUrl: payment.bankSlipUrl,
-        pixQrCode: payment.pixTransaction?.qrCode,
-        message: 'Pagamento criado com sucesso! Verifique seu email para instruções de pagamento.',
+        paymentUrl: payment.invoiceUrl,
+        message: 'Pagamento criado com sucesso! Você será redirecionado para finalizar o pagamento.',
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

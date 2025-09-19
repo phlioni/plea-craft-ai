@@ -75,7 +75,7 @@ const Checkout = () => {
       const { data, error } = await supabase.functions.invoke("process-payment", {
         body: {
           customer: formData,
-          value: 99.90, // Valor do serviço
+          value: 19.99, // Valor do serviço
           description: "Serviço Jurídico - Petição Inicial"
         }
       });
@@ -85,9 +85,15 @@ const Checkout = () => {
       if (data.success) {
         toast({
           title: "Pagamento processado!",
-          description: "Seu pagamento foi processado com sucesso. Você receberá um email de confirmação.",
+          description: "Redirecionando para finalizar o pagamento...",
         });
-        navigate("/dashboard");
+        
+        // Redirecionar para a URL de pagamento do ASAAS
+        if (data.paymentUrl) {
+          window.location.href = data.paymentUrl;
+        } else {
+          navigate("/dashboard");
+        }
       } else {
         throw new Error(data.message || "Erro ao processar pagamento");
       }
@@ -263,7 +269,7 @@ const Checkout = () => {
                   disabled={isLoading}
                   variant="hero"
                 >
-                  {isLoading ? "Processando..." : "Finalizar Pagamento - R$ 99,90"}
+                  {isLoading ? "Processando..." : "Finalizar Pagamento - R$ 19,99"}
                 </Button>
               </form>
             </CardContent>
@@ -280,7 +286,7 @@ const Checkout = () => {
             <CardContent className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="font-medium">Petição Inicial - Juizado Especial Cível</span>
-                <span className="text-primary font-bold">R$ 99,90</span>
+                <span className="text-primary font-bold">R$ 19,99</span>
               </div>
               
               <div className="space-y-2 text-sm text-muted-foreground">
@@ -294,7 +300,7 @@ const Checkout = () => {
 
               <div className="flex justify-between items-center text-lg font-bold">
                 <span>Total</span>
-                <span className="text-primary">R$ 99,90</span>
+                <span className="text-primary">R$ 19,99</span>
               </div>
 
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
