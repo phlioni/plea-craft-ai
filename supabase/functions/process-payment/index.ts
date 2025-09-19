@@ -106,7 +106,7 @@ serve(async (req) => {
         items: [
           {
             description: description,
-            name: "Plano Mensal - Serviços Jurídicos",
+            name: "Plano Mensal - Jurídico",
             quantity: 1,
             value: value
           }
