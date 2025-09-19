@@ -17,32 +17,47 @@ export type Database = {
       legal_cases: {
         Row: {
           case_data: Json
+          case_number: string | null
           created_at: string
+          description: string | null
+          document_content: string | null
           document_type: string
           facts_narrative: string
           generated_document_url: string | null
           id: string
+          party_names: string | null
           status: string
+          title: string | null
           user_id: string
         }
         Insert: {
           case_data?: Json
+          case_number?: string | null
           created_at?: string
+          description?: string | null
+          document_content?: string | null
           document_type?: string
           facts_narrative: string
           generated_document_url?: string | null
           id?: string
+          party_names?: string | null
           status?: string
+          title?: string | null
           user_id: string
         }
         Update: {
           case_data?: Json
+          case_number?: string | null
           created_at?: string
+          description?: string | null
+          document_content?: string | null
           document_type?: string
           facts_narrative?: string
           generated_document_url?: string | null
           id?: string
+          party_names?: string | null
           status?: string
+          title?: string | null
           user_id?: string
         }
         Relationships: [
