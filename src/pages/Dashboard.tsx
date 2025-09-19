@@ -120,15 +120,29 @@ const Dashboard = () => {
         return;
       }
 
+      // Determine file extension based on URL
+      const isRtf = documentUrl.endsWith('.rtf');
+      const extension = isRtf ? '.rtf' : '.html';
+      const fileName = `peticao_inicial_${caseId}${extension}`;
+
       // Create download link
       const url = URL.createObjectURL(data);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `documento_${caseId}.docx`;
+      a.download = fileName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+
+      // Show appropriate message based on file type
+      if (!isRtf) {
+        toast({
+          title: "Download Concluído",
+          description: "Arquivo HTML baixado. Para melhor compatibilidade, novos documentos serão gerados em formato RTF.",
+          variant: "default",
+        });
+      }
     } catch (error) {
       toast({
         title: "Erro",

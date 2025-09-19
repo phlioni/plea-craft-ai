@@ -136,33 +136,25 @@ Redija a petição inicial completa e bem fundamentada:`;
 
     console.log('OpenAI response received, length:', generatedText.length);
 
-    // Create a simple Word document content
-    const wordContent = `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Petição Inicial</title>
-    <style>
-        body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.5; margin: 2cm; }
-        .center { text-align: center; }
-        .right { text-align: right; }
-        .bold { font-weight: bold; }
-        .underline { text-decoration: underline; }
-        p { margin-bottom: 12pt; text-align: justify; }
-        h1, h2, h3 { text-align: center; }
-    </style>
-</head>
-<body>
-${generatedText.replace(/\n/g, '</p><p>')}
-</body>
-</html>`;
+    // Create RTF document content that Word can open properly
+    const cleanText = generatedText
+      .replace(/\*\*(.*?)\*\*/g, '\\b $1\\b0 ') // Convert bold markdown to RTF bold
+      .replace(/[\\{}]/g, (char) => '\\' + char) // Escape RTF special characters
+      .replace(/\n\n+/g, '\\par\\par ') // Convert double line breaks to paragraph breaks
+      .replace(/\n/g, '\\par '); // Convert single line breaks to paragraph breaks
+    
+    const rtfContent = `{\\rtf1\\ansi\\deff0
+{\\fonttbl{\\f0\\froman\\fprq2\\fcharset0 Times New Roman;}}
+{\\colortbl ;\\red0\\green0\\blue0;}
+\\viewkind4\\uc1\\pard\\cf1\\f0\\fs24 ${cleanText}\\par
+}`;
 
-    // Upload the document to Supabase Storage
-    const fileName = `${user.id}/${legalCase.id}/peticao_inicial.html`;
+    // Upload the document to Supabase Storage  
+    const fileName = `${user.id}/${legalCase.id}/peticao_inicial.rtf`;
     
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('generated-documents')
-      .upload(fileName, new Blob([wordContent], { type: 'text/html' }));
+      .upload(fileName, new Blob([rtfContent], { type: 'application/rtf' }));
 
     if (uploadError) {
       console.error('Storage upload error:', uploadError);
