@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,6 +31,7 @@ interface DocumentModalProps {
 const DocumentModal = ({ case: caseItem, isOpen, onClose, onUpdate }: DocumentModalProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [editData, setEditData] = useState({
     title: "",
     description: "",
@@ -49,6 +50,64 @@ const DocumentModal = ({ case: caseItem, isOpen, onClose, onUpdate }: DocumentMo
       });
     }
   };
+
+  // Função para carregar conteúdo do arquivo se não estiver no banco
+  const loadDocumentContent = async () => {
+    if (!caseItem?.generated_document_url || caseItem.document_content) return;
+
+    setIsLoadingContent(true);
+    try {
+      const { data, error } = await supabase.storage
+        .from('generated-documents')
+        .download(caseItem.generated_document_url);
+
+      if (error) throw error;
+
+      let content = "";
+      
+      // Se for arquivo HTML, extrair texto
+      if (caseItem.generated_document_url.includes('.html')) {
+        content = await data.text();
+        // Remover tags HTML básicas para exibição
+        content = content.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+      } else if (caseItem.generated_document_url.includes('.rtf') || caseItem.generated_document_url.includes('.docx')) {
+        // Para arquivos RTF/DOCX, mostrar mensagem informativa
+        content = "Este documento foi gerado em formato " + 
+                 (caseItem.generated_document_url.includes('.docx') ? "Word (.docx)" : "RTF") + 
+                 ". Para visualizar o conteúdo completo, faça o download do arquivo.";
+      }
+
+      // Atualizar no banco de dados
+      if (content) {
+        await supabase
+          .from('legal_cases')
+          .update({ document_content: content })
+          .eq('id', caseItem.id);
+
+        // Atualizar o estado local
+        if (caseItem) {
+          caseItem.document_content = content;
+        }
+      }
+
+    } catch (error) {
+      console.error('Error loading document content:', error);
+      toast({
+        title: "Aviso",
+        description: "Não foi possível carregar o conteúdo do documento. Utilize o download para acessar o arquivo completo.",
+        variant: "default",
+      });
+    } finally {
+      setIsLoadingContent(false);
+    }
+  };
+
+  // Carregar conteúdo quando o modal abrir
+  useEffect(() => {
+    if (isOpen && caseItem && !caseItem.document_content && caseItem.generated_document_url) {
+      loadDocumentContent();
+    }
+  }, [isOpen, caseItem]);
 
   const handleEdit = () => {
     initializeEditData();
@@ -239,7 +298,12 @@ const DocumentModal = ({ case: caseItem, isOpen, onClose, onUpdate }: DocumentMo
               <div>
                 <h4 className="font-medium text-sm text-muted-foreground mb-2">Conteúdo do Documento</h4>
                 <div className="border rounded-lg p-4 bg-muted/50 max-h-96 overflow-y-auto">
-                  {caseItem.document_content ? (
+                  {isLoadingContent ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                      <span className="ml-2 text-sm text-muted-foreground">Carregando conteúdo...</span>
+                    </div>
+                  ) : caseItem.document_content ? (
                     <pre className="text-sm whitespace-pre-wrap font-mono">{caseItem.document_content}</pre>
                   ) : (
                     <p className="text-sm text-muted-foreground italic">
