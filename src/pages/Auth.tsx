@@ -27,6 +27,25 @@ const Auth = () => {
   });
 
   useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('Auth event:', event, session?.user?.email);
+        
+        if (event === 'SIGNED_IN' && session) {
+          toast({
+            title: "Login realizado!",
+            description: "Bem-vindo!",
+          });
+          navigate('/dashboard');
+        } else if (event === 'TOKEN_REFRESHED' && session) {
+          // User confirmed email or logged in
+          navigate('/dashboard');
+        }
+      }
+    );
+
+    // THEN check for existing session
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -34,7 +53,10 @@ const Auth = () => {
       }
     };
     checkUser();
-  }, [navigate]);
+
+    // Cleanup subscription
+    return () => subscription.unsubscribe();
+  }, [navigate, toast]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,7 +124,7 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      const redirectUrl = `${window.location.origin}/dashboard`;
+      const redirectUrl = `${window.location.origin}/confirm`;
       
       const { data, error } = await supabase.auth.signUp({
         email: signupData.email,
@@ -130,11 +152,18 @@ const Auth = () => {
           });
         }
       } else if (data.user) {
-        toast({
-          title: "Cadastro realizado!",
-          description: "Bem-vindo! Você foi automaticamente conectado.",
-        });
-        navigate('/dashboard');
+        if (data.user.email_confirmed_at) {
+          toast({
+            title: "Cadastro realizado!",
+            description: "Bem-vindo! Você foi automaticamente conectado.",
+          });
+          navigate('/dashboard');
+        } else {
+          toast({
+            title: "Cadastro realizado!",
+            description: "Verifique seu email para confirmar sua conta. Após confirmar, você será redirecionado automaticamente.",
+          });
+        }
       }
     } catch (error) {
       toast({

@@ -147,14 +147,14 @@ const NewCase = () => {
       {/* Header */}
       <header className="border-b bg-white shadow-soft">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard')}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar
+              <ArrowLeft className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Voltar</span>
             </Button>
             <Link to="/" className="flex items-center gap-2 text-primary hover:text-primary-glow transition-colors">
-              <Scale className="h-8 w-8" />
-              <span className="text-xl font-bold">PleaCraft AI</span>
+              <Scale className="h-6 w-6 sm:h-8 sm:w-8" />
+              <span className="text-lg sm:text-xl font-bold">PleaCraft AI</span>
             </Link>
           </div>
         </div>
@@ -165,10 +165,10 @@ const NewCase = () => {
         <div className="max-w-4xl mx-auto space-y-8">
           {/* Page Title */}
           <div className="text-center space-y-4">
-            <h1 className="text-3xl font-bold text-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
               Gerador de Peça Judicial
             </h1>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
               Preencha as informações abaixo com cuidado. Quanto mais detalhes você fornecer, 
               melhor será a qualidade do documento gerado.
             </p>
@@ -395,7 +395,7 @@ const NewCase = () => {
                 variant="hero"
                 size="lg"
                 disabled={isLoading || caseData.factsNarrative.length < 100}
-                className="shadow-medium hover:shadow-strong"
+                className="shadow-medium hover:shadow-strong w-full sm:w-auto"
               >
                 {isLoading ? "Gerando Documento..." : "Gerar Meu Documento"}
               </Button>

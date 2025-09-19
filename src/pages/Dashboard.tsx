@@ -114,8 +114,17 @@ const Dashboard = () => {
   }, [searchTerm, cases]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate('/');
+    try {
+      await supabase.auth.signOut();
+      // Force complete logout by clearing localStorage and navigating
+      localStorage.clear();
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Error signing out:', error);
+      // Force logout even if there's an error
+      localStorage.clear();
+      window.location.href = '/';
+    }
   };
 
   const handleCaseClick = (caseItem: LegalCase) => {
@@ -238,20 +247,20 @@ const Dashboard = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link to="/" className="flex items-center gap-2 text-primary hover:text-primary-glow transition-colors">
-              <Scale className="h-8 w-8" />
-              <span className="text-xl font-bold">PleaCraft AI</span>
+              <Scale className="h-6 w-6 sm:h-8 sm:w-8" />
+              <span className="text-lg sm:text-xl font-bold">PleaCraft AI</span>
             </Link>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               {profile && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
                   <User className="h-4 w-4" />
                   <span>{profile.full_name}</span>
                 </div>
               )}
               <Button variant="ghost" size="sm" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Sair
+                <LogOut className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Sair</span>
               </Button>
             </div>
           </div>
@@ -272,7 +281,7 @@ const Dashboard = () => {
               variant="hero"
               size="lg"
               onClick={() => navigate('/new-case')}
-              className="shadow-medium hover:shadow-strong transition-all"
+              className="shadow-medium hover:shadow-strong transition-all w-full sm:w-auto"
             >
               <Plus className="h-5 w-5 mr-2" />
               Criar Novo Documento
@@ -339,13 +348,13 @@ const Dashboard = () => {
                   {filteredCases.map((caseItem) => (
                     <div
                       key={caseItem.id}
-                      className="flex flex-col lg:flex-row items-start lg:items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors gap-4 cursor-pointer"
+                      className="flex flex-col gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
                       onClick={() => handleCaseClick(caseItem)}
                     >
                       <div className="space-y-2 flex-1">
-                        <div className="flex items-center gap-3">
-                          <h4 className="font-medium text-lg">{caseItem.title || caseItem.document_type}</h4>
-                          <Badge variant="outline" className="text-xs">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                          <h4 className="font-medium text-base sm:text-lg">{caseItem.title || caseItem.document_type}</h4>
+                          <Badge variant="outline" className="text-xs self-start">
                             {caseItem.case_number || `#${caseItem.id.substring(0, 8)}`}
                           </Badge>
                         </div>
@@ -362,19 +371,19 @@ const Dashboard = () => {
                           </p>
                         )}
                         
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4" />
                             <span>
-                              {format(new Date(caseItem.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                              {format(new Date(caseItem.created_at), "dd/MM/yyyy", { locale: ptBR })}
                             </span>
                           </div>
-                          <span>•</span>
+                          <span className="hidden sm:inline">•</span>
                           <span>{caseItem.document_type}</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3 self-end lg:self-center" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
                         {getStatusBadge(caseItem.status)}
 
                         <Button
@@ -384,9 +393,10 @@ const Dashboard = () => {
                             e.stopPropagation();
                             handleCaseClick(caseItem);
                           }}
+                          className="flex-1 sm:flex-none"
                         >
-                          <Eye className="h-4 w-4 mr-2" />
-                          Visualizar
+                          <Eye className="h-4 w-4 sm:mr-2" />
+                          <span className="hidden sm:inline">Visualizar</span>
                         </Button>
 
                         {caseItem.status === 'completed' && caseItem.generated_document_url && (
@@ -397,9 +407,10 @@ const Dashboard = () => {
                               e.stopPropagation();
                               handleDownload(caseItem.generated_document_url!, caseItem.id);
                             }}
+                            className="flex-1 sm:flex-none"
                           >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download
+                            <Download className="h-4 w-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Download</span>
                           </Button>
                         )}
 
@@ -413,9 +424,10 @@ const Dashboard = () => {
                               handleRegenerate(caseItem.id);
                             }}
                             disabled={regeneratingIds.has(caseItem.id)}
+                            className="flex-1 sm:flex-none"
                           >
-                            <RefreshCw className={`h-4 w-4 mr-2 ${regeneratingIds.has(caseItem.id) ? 'animate-spin' : ''}`} />
-                            {regeneratingIds.has(caseItem.id) ? 'Regenerando...' : 'Regenerar em Word'}
+                            <RefreshCw className={`h-4 w-4 sm:mr-2 ${regeneratingIds.has(caseItem.id) ? 'animate-spin' : ''}`} />
+                            <span className="hidden sm:inline">{regeneratingIds.has(caseItem.id) ? 'Regenerando...' : 'Regenerar em Word'}</span>
                           </Button>
                         )}
                       </div>
