@@ -198,125 +198,130 @@ const DocumentModal = ({ case: caseItem, isOpen, onClose, onUpdate }: DocumentMo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
-          <div className="flex items-center justify-between">
+          <div className="space-y-4">
             <div>
-              <DialogTitle className="text-xl">{caseItem.title}</DialogTitle>
-              <DialogDescription className="flex items-center gap-4 mt-2">
+              <DialogTitle className="text-lg sm:text-xl pr-2">{caseItem.title}</DialogTitle>
+              <DialogDescription className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2 text-sm">
                 <span>Processo: {caseItem.case_number}</span>
-                <span>•</span>
+                <span className="hidden sm:inline">•</span>
                 <span>Tipo: {caseItem.document_type}</span>
               </DialogDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 pt-2 border-t">
               {caseItem.generated_document_url && (
-                <Button variant="outline" size="sm" onClick={handleDownload}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download
+                <Button variant="outline" size="sm" onClick={handleDownload} className="flex-1 sm:flex-none">
+                  <Download className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Download</span>
                 </Button>
               )}
               {!isEditing ? (
-                <Button variant="outline" size="sm" onClick={handleEdit}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Editar
+                <Button variant="outline" size="sm" onClick={handleEdit} className="flex-1 sm:flex-none">
+                  <Edit className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Editar</span>
                 </Button>
               ) : (
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
-                    <X className="h-4 w-4 mr-2" />
-                    Cancelar
+                <>
+                  <Button variant="outline" size="sm" onClick={() => setIsEditing(false)} className="flex-1 sm:flex-none">
+                    <X className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Cancelar</span>
                   </Button>
-                  <Button variant="default" size="sm" onClick={handleSave} disabled={isSaving}>
-                    <Save className="h-4 w-4 mr-2" />
-                    {isSaving ? "Salvando..." : "Salvar"}
+                  <Button variant="default" size="sm" onClick={handleSave} disabled={isSaving} className="flex-1 sm:flex-none">
+                    <Save className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">{isSaving ? "Salvando..." : "Salvar"}</span>
                   </Button>
-                </div>
+                </>
               )}
             </div>
           </div>
         </DialogHeader>
 
-        <div className="space-y-6 mt-6">
+        <div className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
           {isEditing ? (
-            <>
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Título do Processo</Label>
+                <Label htmlFor="title" className="text-sm font-medium">Título do Processo</Label>
                 <Input
                   id="title"
                   value={editData.title}
                   onChange={(e) => setEditData({ ...editData, title: e.target.value })}
                   placeholder="Digite o título do processo"
+                  className="text-sm"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="party_names">Partes Envolvidas</Label>
+                <Label htmlFor="party_names" className="text-sm font-medium">Partes Envolvidas</Label>
                 <Input
                   id="party_names"
                   value={editData.party_names}
                   onChange={(e) => setEditData({ ...editData, party_names: e.target.value })}
                   placeholder="Ex: João Silva vs. Empresa XYZ"
+                  className="text-sm"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Descrição</Label>
+                <Label htmlFor="description" className="text-sm font-medium">Descrição</Label>
                 <Textarea
                   id="description"
                   value={editData.description}
                   onChange={(e) => setEditData({ ...editData, description: e.target.value })}
                   placeholder="Descreva brevemente o caso"
                   rows={3}
+                  className="text-sm resize-none"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="document_content">Conteúdo do Documento</Label>
+                <Label htmlFor="document_content" className="text-sm font-medium">Conteúdo do Documento</Label>
                 <Textarea
                   id="document_content"
                   value={editData.document_content}
                   onChange={(e) => setEditData({ ...editData, document_content: e.target.value })}
                   placeholder="Conteúdo do documento jurídico"
-                  rows={15}
-                  className="font-mono text-sm"
+                  rows={12}
+                  className="font-mono text-xs sm:text-sm resize-none"
                 />
               </div>
-            </>
+            </div>
           ) : (
-            <>
+            <div className="space-y-4">
               {caseItem.party_names && (
-                <div>
-                  <h4 className="font-medium text-sm text-muted-foreground mb-2">Partes Envolvidas</h4>
-                  <p className="text-sm">{caseItem.party_names}</p>
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm text-muted-foreground">Partes Envolvidas</h4>
+                  <p className="text-sm break-words">{caseItem.party_names}</p>
                 </div>
               )}
 
               {caseItem.description && (
-                <div>
-                  <h4 className="font-medium text-sm text-muted-foreground mb-2">Descrição</h4>
-                  <p className="text-sm">{caseItem.description}</p>
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm text-muted-foreground">Descrição</h4>
+                  <p className="text-sm break-words">{caseItem.description}</p>
                 </div>
               )}
 
-              <div>
-                <h4 className="font-medium text-sm text-muted-foreground mb-2">Conteúdo do Documento</h4>
-                <div className="border rounded-lg p-4 bg-muted/50 max-h-96 overflow-y-auto">
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm text-muted-foreground">Conteúdo do Documento</h4>
+                <div className="border rounded-lg p-3 sm:p-4 bg-muted/50 max-h-[50vh] sm:max-h-96 overflow-y-auto">
                   {isLoadingContent ? (
-                    <div className="flex items-center justify-center py-8">
+                    <div className="flex flex-col items-center justify-center py-8 space-y-2">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                      <span className="ml-2 text-sm text-muted-foreground">Carregando conteúdo...</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground text-center">Carregando conteúdo...</span>
                     </div>
                   ) : caseItem.document_content ? (
-                    <pre className="text-sm whitespace-pre-wrap font-mono">{caseItem.document_content}</pre>
+                    <pre className="text-xs sm:text-sm whitespace-pre-wrap font-mono break-words overflow-wrap-anywhere">
+                      {caseItem.document_content}
+                    </pre>
                   ) : (
-                    <p className="text-sm text-muted-foreground italic">
+                    <p className="text-xs sm:text-sm text-muted-foreground italic text-center py-4">
                       Conteúdo não disponível. Use o botão "Editar" para adicionar o conteúdo do documento.
                     </p>
                   )}
                 </div>
               </div>
-            </>
+            </div>
           )}
         </div>
       </DialogContent>
