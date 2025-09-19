@@ -278,6 +278,16 @@ const Dashboard = () => {
               Criar Novo Documento
             </Button>
             
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => navigate('/checkout')}
+              className="shadow-soft hover:shadow-medium transition-all border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+            >
+              <Scale className="h-5 w-5 mr-2" />
+              Contratar Serviços
+            </Button>
+            
             {/* Campo de pesquisa */}
             <div className="relative w-full max-w-sm">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
