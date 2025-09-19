@@ -45,7 +45,7 @@ serve(async (req) => {
     
     // Buscar cliente existente
     const searchCustomerResponse = await fetch(
-      `https://sandbox.asaas.com/api/v3/customers?email=${encodeURIComponent(customer.email)}`,
+      `https://api-sandbox.asaas.com/v3/customers?email=${encodeURIComponent(customer.email)}`,
       {
         method: 'GET',
         headers: {
@@ -64,7 +64,7 @@ serve(async (req) => {
       console.log('Existing customer found:', customerId);
     } else {
       // Criar novo cliente seguindo documentação ASAAS
-      const createCustomerResponse = await fetch('https://sandbox.asaas.com/api/v3/customers', {
+      const createCustomerResponse = await fetch('https://api-sandbox.asaas.com/v3/customers', {
         method: 'POST',
         headers: {
           'access_token': asaasApiKey,
@@ -89,7 +89,7 @@ serve(async (req) => {
     }
 
     // Criar checkout session para assinatura recorrente
-    const checkoutResponse = await fetch('https://sandbox.asaas.com/api/v3/checkoutSession', {
+    const checkoutResponse = await fetch('https://api-sandbox.asaas.com/v3/checkouts', {
       method: 'POST',
       headers: {
         'access_token': asaasApiKey,
