@@ -13,6 +13,147 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
+// Helper function to create a simple DOCX file
+function createDocxBuffer(content: string): Uint8Array {
+  // Create a minimal DOCX structure with proper XML
+  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    ${content.split('\n').map(paragraph => {
+      if (paragraph.trim() === '') return '';
+      
+      // Handle bold text marked with **
+      let processedParagraph = paragraph
+        .replace(/\*\*(.*?)\*\*/g, '<w:r><w:rPr><w:b/></w:rPr><w:t>$1</w:t></w:r>')
+        .replace(/^(.*)$/, '<w:r><w:t>$1</w:t></w:r>');
+      
+      return `<w:p><w:pPr><w:spacing w:after="200"/></w:pPr>${processedParagraph}</w:p>`;
+    }).join('')}
+  </w:body>
+</w:document>`;
+
+  const appXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/docPropsApp">
+  <Application>PleaCraft AI</Application>
+  <DocSecurity>0</DocSecurity>
+</Properties>`;
+
+  const coreXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties">
+  <dc:title xmlns:dc="http://purl.org/dc/elements/1.1/">Petição Inicial</dc:title>
+  <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">PleaCraft AI</dc:creator>
+  <cp:lastModifiedBy>PleaCraft AI</cp:lastModifiedBy>
+  <cp:revision>1</cp:revision>
+  <dcterms:created xmlns:dcterms="http://purl.org/dc/terms/" xsi:type="dcterms:W3CDTF">${new Date().toISOString()}</dcterms:created>
+  <dcterms:modified xmlns:dcterms="http://purl.org/dc/terms/" xsi:type="dcterms:W3CDTF">${new Date().toISOString()}</dcterms:modified>
+</cp:coreProperties>`;
+
+  const relsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
+  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>
+</Relationships>`;
+
+  const wordRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+</Relationships>`;
+
+  const contentTypesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+  <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
+  <Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
+</Types>`;
+
+  // Create ZIP structure manually
+  const files = [
+    { name: '[Content_Types].xml', content: contentTypesXml },
+    { name: '_rels/.rels', content: relsXml },
+    { name: 'docProps/app.xml', content: appXml },
+    { name: 'docProps/core.xml', content: coreXml },
+    { name: 'word/document.xml', content: documentXml },
+    { name: 'word/_rels/document.xml.rels', content: wordRelsXml }
+  ];
+
+  // Simple ZIP creation (minimal implementation)
+  const encoder = new TextEncoder();
+  const zipData: number[] = [];
+  
+  // ZIP local file header signature
+  const localFileHeader = [0x50, 0x4b, 0x03, 0x04];
+  
+  let centralDirectory: number[] = [];
+  let offset = 0;
+  
+  for (const file of files) {
+    const fileData = encoder.encode(file.content);
+    const fileName = encoder.encode(file.name);
+    
+    // Local file header
+    zipData.push(...localFileHeader);
+    zipData.push(0x14, 0x00); // Version needed to extract
+    zipData.push(0x00, 0x00); // General purpose bit flag
+    zipData.push(0x00, 0x00); // Compression method (stored)
+    zipData.push(0x00, 0x00, 0x00, 0x00); // File last modification time & date
+    zipData.push(0x00, 0x00, 0x00, 0x00); // CRC-32
+    
+    // File sizes (little-endian)
+    const size = fileData.length;
+    zipData.push(size & 0xff, (size >> 8) & 0xff, (size >> 16) & 0xff, (size >> 24) & 0xff);
+    zipData.push(size & 0xff, (size >> 8) & 0xff, (size >> 16) & 0xff, (size >> 24) & 0xff);
+    
+    // File name length
+    zipData.push(fileName.length & 0xff, (fileName.length >> 8) & 0xff);
+    zipData.push(0x00, 0x00); // Extra field length
+    
+    // File name
+    zipData.push(...fileName);
+    
+    // File data
+    zipData.push(...fileData);
+    
+    // Save info for central directory
+    centralDirectory.push(...[0x50, 0x4b, 0x01, 0x02]); // Central directory signature
+    centralDirectory.push(0x14, 0x00); // Version made by
+    centralDirectory.push(0x14, 0x00); // Version needed to extract
+    centralDirectory.push(0x00, 0x00); // General purpose bit flag
+    centralDirectory.push(0x00, 0x00); // Compression method
+    centralDirectory.push(0x00, 0x00, 0x00, 0x00); // File last modification time & date
+    centralDirectory.push(0x00, 0x00, 0x00, 0x00); // CRC-32
+    centralDirectory.push(size & 0xff, (size >> 8) & 0xff, (size >> 16) & 0xff, (size >> 24) & 0xff);
+    centralDirectory.push(size & 0xff, (size >> 8) & 0xff, (size >> 16) & 0xff, (size >> 24) & 0xff);
+    centralDirectory.push(fileName.length & 0xff, (fileName.length >> 8) & 0xff);
+    centralDirectory.push(0x00, 0x00); // Extra field length
+    centralDirectory.push(0x00, 0x00); // Comment length
+    centralDirectory.push(0x00, 0x00); // Disk number start
+    centralDirectory.push(0x00, 0x00); // Internal file attributes
+    centralDirectory.push(0x00, 0x00, 0x00, 0x00); // External file attributes
+    centralDirectory.push(offset & 0xff, (offset >> 8) & 0xff, (offset >> 16) & 0xff, (offset >> 24) & 0xff);
+    centralDirectory.push(...fileName);
+    
+    offset = zipData.length;
+  }
+  
+  const centralDirStart = zipData.length;
+  zipData.push(...centralDirectory);
+  const centralDirSize = centralDirectory.length;
+  
+  // End of central directory
+  zipData.push(0x50, 0x4b, 0x05, 0x06); // End of central directory signature
+  zipData.push(0x00, 0x00); // Number of this disk
+  zipData.push(0x00, 0x00); // Disk where central directory starts
+  zipData.push(files.length & 0xff, (files.length >> 8) & 0xff); // Number of central directory records on this disk
+  zipData.push(files.length & 0xff, (files.length >> 8) & 0xff); // Total number of central directory records
+  zipData.push(centralDirSize & 0xff, (centralDirSize >> 8) & 0xff, (centralDirSize >> 16) & 0xff, (centralDirSize >> 24) & 0xff);
+  zipData.push(centralDirStart & 0xff, (centralDirStart >> 8) & 0xff, (centralDirStart >> 16) & 0xff, (centralDirStart >> 24) & 0xff);
+  zipData.push(0x00, 0x00); // Comment length
+  
+  return new Uint8Array(zipData);
+}
+
 serve(async (req) => {
   console.log('Generate document function called');
   
@@ -136,25 +277,17 @@ Redija a petição inicial completa e bem fundamentada:`;
 
     console.log('OpenAI response received, length:', generatedText.length);
 
-    // Create RTF document content that Word can open properly
-    const cleanText = generatedText
-      .replace(/\*\*(.*?)\*\*/g, '\\b $1\\b0 ') // Convert bold markdown to RTF bold
-      .replace(/[\\{}]/g, (char) => '\\' + char) // Escape RTF special characters
-      .replace(/\n\n+/g, '\\par\\par ') // Convert double line breaks to paragraph breaks
-      .replace(/\n/g, '\\par '); // Convert single line breaks to paragraph breaks
-    
-    const rtfContent = `{\\rtf1\\ansi\\deff0
-{\\fonttbl{\\f0\\froman\\fprq2\\fcharset0 Times New Roman;}}
-{\\colortbl ;\\red0\\green0\\blue0;}
-\\viewkind4\\uc1\\pard\\cf1\\f0\\fs24 ${cleanText}\\par
-}`;
+    // Create a proper DOCX file
+    const docxBuffer = createDocxBuffer(generatedText);
 
     // Upload the document to Supabase Storage  
-    const fileName = `${user.id}/${legalCase.id}/peticao_inicial.rtf`;
+    const fileName = `${user.id}/${legalCase.id}/peticao_inicial.docx`;
     
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('generated-documents')
-      .upload(fileName, new Blob([rtfContent], { type: 'application/rtf' }));
+      .upload(fileName, docxBuffer, { 
+        contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      });
 
     if (uploadError) {
       console.error('Storage upload error:', uploadError);

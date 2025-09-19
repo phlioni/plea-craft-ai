@@ -121,8 +121,12 @@ const Dashboard = () => {
       }
 
       // Determine file extension based on URL
+      const isDocx = documentUrl.endsWith('.docx');
       const isRtf = documentUrl.endsWith('.rtf');
-      const extension = isRtf ? '.rtf' : '.html';
+      let extension = '.html';
+      if (isDocx) extension = '.docx';
+      else if (isRtf) extension = '.rtf';
+      
       const fileName = `peticao_inicial_${caseId}${extension}`;
 
       // Create download link
@@ -136,10 +140,15 @@ const Dashboard = () => {
       URL.revokeObjectURL(url);
 
       // Show appropriate message based on file type
-      if (!isRtf) {
+      if (isDocx) {
         toast({
           title: "Download Concluído",
-          description: "Arquivo HTML baixado. Para melhor compatibilidade, novos documentos serão gerados em formato RTF.",
+          description: "Documento Word baixado com sucesso! Agora você pode editá-lo diretamente no Microsoft Word.",
+        });
+      } else if (!isRtf && !isDocx) {
+        toast({
+          title: "Download Concluído",
+          description: "Arquivo HTML baixado. Para melhor compatibilidade, novos documentos são gerados em formato Word (.docx).",
           variant: "default",
         });
       }
