@@ -75,8 +75,8 @@ const Checkout = () => {
       const { data, error } = await supabase.functions.invoke("process-payment", {
         body: {
           customer: formData,
-          value: 19.99, // Valor do serviço
-          description: "Serviço Jurídico - Petição Inicial"
+          value: 19.99, // Valor mensal da assinatura
+          description: "Assinatura Mensal - Serviços Jurídicos"
         }
       });
 
@@ -84,8 +84,8 @@ const Checkout = () => {
 
       if (data.success) {
         toast({
-          title: "Pagamento processado!",
-          description: "Redirecionando para finalizar o pagamento...",
+          title: "Assinatura criada!",
+          description: "Redirecionando para o checkout do ASAAS...",
         });
         
         // Redirecionar para a URL de pagamento do ASAAS
@@ -100,8 +100,8 @@ const Checkout = () => {
     } catch (error) {
       console.error("Erro no checkout:", error);
       toast({
-        title: "Erro no pagamento",
-        description: error instanceof Error ? error.message : "Ocorreu um erro ao processar o pagamento.",
+        title: "Erro na assinatura",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao criar a assinatura.",
         variant: "destructive",
       });
     } finally {
@@ -121,9 +121,9 @@ const Checkout = () => {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar ao Dashboard
           </Button>
-          <h1 className="text-3xl font-bold text-foreground">Checkout</h1>
+          <h1 className="text-3xl font-bold text-foreground">Assinatura</h1>
           <p className="text-muted-foreground mt-2">
-            Finalize seu pedido para o serviço jurídico
+            Assine nosso plano mensal de serviços jurídicos
           </p>
         </div>
 
@@ -269,7 +269,7 @@ const Checkout = () => {
                   disabled={isLoading}
                   variant="hero"
                 >
-                  {isLoading ? "Processando..." : "Finalizar Pagamento - R$ 19,99"}
+                  {isLoading ? "Processando..." : "Assinar Plano - R$ 19,99/mês"}
                 </Button>
               </form>
             </CardContent>
@@ -278,28 +278,29 @@ const Checkout = () => {
           {/* Resumo do Pedido */}
           <Card>
             <CardHeader>
-              <CardTitle>Resumo do Pedido</CardTitle>
+              <CardTitle>Resumo da Assinatura</CardTitle>
               <CardDescription>
-                Detalhes do serviço contratado
+                Detalhes do plano mensal contratado
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="font-medium">Petição Inicial - Juizado Especial Cível</span>
-                <span className="text-primary font-bold">R$ 19,99</span>
+                <span className="font-medium">Plano Mensal - Serviços Jurídicos</span>
+                <span className="text-primary font-bold">R$ 19,99/mês</span>
               </div>
               
               <div className="space-y-2 text-sm text-muted-foreground">
-                <p>• Elaboração completa da petição</p>
-                <p>• Análise do caso personalizada</p>
-                <p>• Documento pronto para protocolo</p>
-                <p>• Suporte via email</p>
+                <p>• Elaboração de petições ilimitadas</p>
+                <p>• Análise de casos personalizada</p>
+                <p>• Documentos prontos para protocolo</p>
+                <p>• Suporte prioritário via email</p>
+                <p>• Cancelamento a qualquer momento</p>
               </div>
 
               <Separator />
 
               <div className="flex justify-between items-center text-lg font-bold">
-                <span>Total</span>
+                <span>Valor Mensal</span>
                 <span className="text-primary">R$ 19,99</span>
               </div>
 

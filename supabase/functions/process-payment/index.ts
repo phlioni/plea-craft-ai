@@ -88,8 +88,8 @@ serve(async (req) => {
       console.log('New customer created:', customerId);
     }
 
-    // Criar cobrança usando endpoint lean/payments
-    const paymentResponse = await fetch('https://sandbox.asaas.com/api/v3/lean/payments', {
+    // Criar assinatura recorrente
+    const subscriptionResponse = await fetch('https://sandbox.asaas.com/api/v3/subscriptions', {
       method: 'POST',
       headers: {
         'access_token': asaasApiKey,
@@ -99,25 +99,27 @@ serve(async (req) => {
         customer: customerId,
         billingType: 'CREDIT_CARD',
         value: value,
-        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 dias
+        cycle: 'MONTHLY',
+        nextDueDate: new Date().toISOString().split('T')[0], // Primeira cobrança hoje
+        description: description,
       }),
     });
 
-    if (!paymentResponse.ok) {
-      const errorText = await paymentResponse.text();
-      console.error('Failed to create payment:', errorText);
-      throw new Error(`Failed to create payment: ${errorText}`);
+    if (!subscriptionResponse.ok) {
+      const errorText = await subscriptionResponse.text();
+      console.error('Failed to create subscription:', errorText);
+      throw new Error(`Failed to create subscription: ${errorText}`);
     }
 
-    const payment = await paymentResponse.json();
-    console.log('Payment created successfully:', payment.id);
+    const subscription = await subscriptionResponse.json();
+    console.log('Subscription created successfully:', subscription.id);
 
     return new Response(
       JSON.stringify({
         success: true,
-        paymentId: payment.id,
-        paymentUrl: payment.invoiceUrl,
-        message: 'Pagamento criado com sucesso! Você será redirecionado para finalizar o pagamento.',
+        subscriptionId: subscription.id,
+        paymentUrl: subscription.invoiceUrl,
+        message: 'Assinatura criada com sucesso! Você será redirecionado para finalizar o pagamento.',
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
