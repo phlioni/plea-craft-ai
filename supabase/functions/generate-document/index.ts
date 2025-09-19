@@ -65,7 +65,7 @@ serve(async (req) => {
     }
 
     // Entrada - suporta regeneração e criação
-    const { caseData, factsNarrative, caseId, regenerate } = await req.json();
+    const { caseData, factsNarrative, caseId, regenerate, files = [] } = await req.json();
 
     let currentCase;
 
@@ -130,6 +130,12 @@ ${(caseInfo.defendantAddress || caseInfo.enderecoReu) ? `- Endereço: ${caseInfo
 
 **RELATO DOS FATOS:**
 ${narrative || caseInfo.fatos}
+
+${files && files.length > 0 ? `**DOCUMENTOS ANEXADOS PARA ANÁLISE:**
+Os seguintes documentos foram anexados pelo usuário e devem ser considerados na elaboração da petição:
+${files.map((file: any, index: number) => `${index + 1}. ${file.name} (${file.type})`).join('\n')}
+
+Analise o conteúdo dos documentos anexados e incorpore as informações relevantes na fundamentação jurídica e na descrição dos fatos. Use os documentos como prova para fortalecer os argumentos da petição.` : ''}
 
 **INSTRUÇÕES PARA A REDAÇÃO:**
 1. Utilize linguagem jurídica adequada mas acessível

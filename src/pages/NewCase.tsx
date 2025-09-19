@@ -99,16 +99,33 @@ const NewCase = () => {
         return;
       }
 
+      // Convert files to base64 for analysis
+      const filesData = await Promise.all(
+        uploadedFiles.map(async (file) => {
+          const base64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const result = reader.result as string;
+              resolve(result.split(',')[1]); // Remove data:type;base64, prefix
+            };
+            reader.readAsDataURL(file);
+          });
+          
+          return {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            content: base64,
+          };
+        })
+      );
+
       // Invoke the generate-document edge function
       const { data, error } = await supabase.functions.invoke('generate-document', {
         body: {
           caseData,
           factsNarrative: caseData.factsNarrative,
-          files: uploadedFiles.map(file => ({
-            name: file.name,
-            size: file.size,
-            type: file.type,
-          })),
+          files: filesData,
         },
       });
 
