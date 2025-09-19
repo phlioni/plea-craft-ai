@@ -198,7 +198,7 @@ const DocumentModal = ({ case: caseItem, isOpen, onClose, onUpdate }: DocumentMo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-4xl h-[85vh] flex flex-col p-4 sm:p-6 my-auto">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[80vh] sm:max-h-[85vh] flex flex-col p-4 sm:p-6 top-[10vh] sm:top-[50%] transform sm:-translate-y-1/2 translate-y-0">
         <DialogHeader className="flex-shrink-0">
           <div className="space-y-4">
             <div>
@@ -237,9 +237,9 @@ const DocumentModal = ({ case: caseItem, isOpen, onClose, onUpdate }: DocumentMo
           </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-4 sm:space-y-6 mt-4 sm:mt-6">
+        <div className="flex-1 overflow-y-auto space-y-3 sm:space-y-4 mt-3 sm:mt-4 min-h-0">
           {isEditing ? (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="title" className="text-sm font-medium">Título do Processo</Label>
                 <Input
@@ -269,41 +269,41 @@ const DocumentModal = ({ case: caseItem, isOpen, onClose, onUpdate }: DocumentMo
                   value={editData.description}
                   onChange={(e) => setEditData({ ...editData, description: e.target.value })}
                   placeholder="Descreva brevemente o caso"
-                  rows={3}
+                  rows={2}
                   className="text-sm resize-none"
                 />
               </div>
 
-              <div className="space-y-2 flex-1">
+              <div className="space-y-2 flex-1 flex flex-col min-h-0">
                 <Label htmlFor="document_content" className="text-sm font-medium">Conteúdo do Documento</Label>
                 <Textarea
                   id="document_content"
                   value={editData.document_content}
                   onChange={(e) => setEditData({ ...editData, document_content: e.target.value })}
                   placeholder="Conteúdo do documento jurídico"
-                  className="font-mono text-xs sm:text-sm resize-none h-[300px] sm:h-[400px]"
+                  className="font-mono text-xs sm:text-sm resize-none flex-1 min-h-[200px]"
                 />
               </div>
             </div>
           ) : (
-            <div className="space-y-4 h-full">
+            <div className="space-y-3 sm:space-y-4 h-full flex flex-col min-h-0">
               {caseItem.party_names && (
-                <div className="space-y-2">
+                <div className="space-y-1 sm:space-y-2">
                   <h4 className="font-medium text-sm text-muted-foreground">Partes Envolvidas</h4>
                   <p className="text-sm break-words">{caseItem.party_names}</p>
                 </div>
               )}
 
               {caseItem.description && (
-                <div className="space-y-2">
+                <div className="space-y-1 sm:space-y-2">
                   <h4 className="font-medium text-sm text-muted-foreground">Descrição</h4>
                   <p className="text-sm break-words">{caseItem.description}</p>
                 </div>
               )}
 
-              <div className="space-y-2 flex-1 flex flex-col">
+              <div className="space-y-1 sm:space-y-2 flex-1 flex flex-col min-h-0">
                 <h4 className="font-medium text-sm text-muted-foreground">Conteúdo do Documento</h4>
-                <div className="border rounded-lg p-3 sm:p-4 bg-muted/50 flex-1 overflow-y-auto min-h-[300px]">
+                <div className="border rounded-lg p-3 sm:p-4 bg-muted/50 flex-1 overflow-y-auto min-h-[200px]">
                   {isLoadingContent ? (
                     <div className="flex flex-col items-center justify-center py-8 space-y-2 h-full">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
