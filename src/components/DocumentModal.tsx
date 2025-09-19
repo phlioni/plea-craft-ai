@@ -198,8 +198,8 @@ const DocumentModal = ({ case: caseItem, isOpen, onClose, onUpdate }: DocumentMo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
-        <DialogHeader>
+      <DialogContent className="w-[95vw] max-w-4xl h-[85vh] flex flex-col p-4 sm:p-6 my-auto">
+        <DialogHeader className="flex-shrink-0">
           <div className="space-y-4">
             <div>
               <DialogTitle className="text-lg sm:text-xl pr-2">{caseItem.title}</DialogTitle>
@@ -237,7 +237,7 @@ const DocumentModal = ({ case: caseItem, isOpen, onClose, onUpdate }: DocumentMo
           </div>
         </DialogHeader>
 
-        <div className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
+        <div className="flex-1 overflow-y-auto space-y-4 sm:space-y-6 mt-4 sm:mt-6">
           {isEditing ? (
             <div className="space-y-4">
               <div className="space-y-2">
@@ -274,20 +274,19 @@ const DocumentModal = ({ case: caseItem, isOpen, onClose, onUpdate }: DocumentMo
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 flex-1">
                 <Label htmlFor="document_content" className="text-sm font-medium">Conteúdo do Documento</Label>
                 <Textarea
                   id="document_content"
                   value={editData.document_content}
                   onChange={(e) => setEditData({ ...editData, document_content: e.target.value })}
                   placeholder="Conteúdo do documento jurídico"
-                  rows={12}
-                  className="font-mono text-xs sm:text-sm resize-none"
+                  className="font-mono text-xs sm:text-sm resize-none h-[300px] sm:h-[400px]"
                 />
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4 h-full">
               {caseItem.party_names && (
                 <div className="space-y-2">
                   <h4 className="font-medium text-sm text-muted-foreground">Partes Envolvidas</h4>
@@ -302,11 +301,11 @@ const DocumentModal = ({ case: caseItem, isOpen, onClose, onUpdate }: DocumentMo
                 </div>
               )}
 
-              <div className="space-y-2">
+              <div className="space-y-2 flex-1 flex flex-col">
                 <h4 className="font-medium text-sm text-muted-foreground">Conteúdo do Documento</h4>
-                <div className="border rounded-lg p-3 sm:p-4 bg-muted/50 max-h-[50vh] sm:max-h-96 overflow-y-auto">
+                <div className="border rounded-lg p-3 sm:p-4 bg-muted/50 flex-1 overflow-y-auto min-h-[300px]">
                   {isLoadingContent ? (
-                    <div className="flex flex-col items-center justify-center py-8 space-y-2">
+                    <div className="flex flex-col items-center justify-center py-8 space-y-2 h-full">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
                       <span className="text-xs sm:text-sm text-muted-foreground text-center">Carregando conteúdo...</span>
                     </div>
@@ -315,9 +314,11 @@ const DocumentModal = ({ case: caseItem, isOpen, onClose, onUpdate }: DocumentMo
                       {caseItem.document_content}
                     </pre>
                   ) : (
-                    <p className="text-xs sm:text-sm text-muted-foreground italic text-center py-4">
-                      Conteúdo não disponível. Use o botão "Editar" para adicionar o conteúdo do documento.
-                    </p>
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-xs sm:text-sm text-muted-foreground italic text-center py-4">
+                        Conteúdo não disponível. Use o botão "Editar" para adicionar o conteúdo do documento.
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>
