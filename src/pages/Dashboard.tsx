@@ -15,8 +15,6 @@ interface LegalCase {
   status: string;
   created_at: string;
   generated_document_url?: string;
-  case_data?: any;
-  facts_narrative?: string;
 }
 
 interface Profile {
@@ -34,20 +32,18 @@ const Dashboard = () => {
   useEffect(() => {
     const checkAuthAndLoadData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         navigate('/auth');
         return;
       }
-
       await loadProfile();
       await loadCases();
     };
 
     checkAuthAndLoadData();
 
-    // Set up auth listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
         navigate('/auth');
       }
@@ -58,16 +54,9 @@ const Dashboard = () => {
 
   const loadProfile = async () => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error loading profile:', error);
-      } else if (data) {
-        setProfile(data);
-      }
+      const { data, error } = await supabase.from('profiles').select('*').single();
+      if (error && error.code !== 'PGRST116') throw error;
+      if (data) setProfile(data);
     } catch (error) {
       console.error('Error loading profile:', error);
     }
@@ -81,19 +70,12 @@ const Dashboard = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar seus casos.",
-          variant: "destructive",
-        });
-      } else {
-        setCases(data || []);
-      }
+      if (error) throw error;
+      setCases(data || []);
     } catch (error) {
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao carregar os dados.",
+        description: "Não foi possível carregar seus casos.",
         variant: "destructive",
       });
     } finally {
@@ -106,91 +88,18 @@ const Dashboard = () => {
     navigate('/');
   };
 
-  const handleRegenerate = async (caseId: string) => {
-    try {
-      // Find the case
-      const caseToRegenerate = cases.find(c => c.id === caseId);
-      if (!caseToRegenerate) {
-        toast({
-          title: "Erro",
-          description: "Caso não encontrado.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Show loading toast
-      toast({
-        title: "Regenerando Documento",
-        description: "Convertendo para formato Word... Isso pode levar alguns segundos.",
-      });
-
-      // Call the generate-document function again with existing data
-      const { data, error } = await supabase.functions.invoke('generate-document', {
-        body: {
-          caseData: caseToRegenerate.case_data,
-          factsNarrative: caseToRegenerate.facts_narrative,
-          files: [],
-          regenerate: true,
-          caseId: caseId
-        },
-      });
-
-      if (error) {
-        console.error('Error regenerating document:', error);
-        toast({
-          title: "Erro na Regeneração",
-          description: "Não foi possível regenerar o documento.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Refresh the cases list
-      await loadCases();
-
-      toast({
-        title: "Documento Regenerado!",
-        description: "O documento foi convertido para formato Word com sucesso.",
-      });
-
-    } catch (error) {
-      console.error('Error regenerating document:', error);
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao regenerar o documento.",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleDownload = async (documentUrl: string, caseId: string) => {
     try {
-      // Download the document from Supabase storage
       const { data, error } = await supabase.storage
         .from('generated-documents')
         .download(documentUrl);
 
-      if (error) {
-        toast({
-          title: "Erro no Download",
-          description: "Não foi possível baixar o documento.",
-          variant: "destructive",
-        });
-        return;
-      }
+      if (error) throw error;
 
-      // Determine file extension based on URL
-      const isDocx = documentUrl.endsWith('.docx');
-      const isRtf = documentUrl.endsWith('.rtf');
-      let extension = '.html';
-      if (isDocx) extension = '.docx';
-      else if (isRtf) extension = '.rtf';
-      
-      const fileName = `peticao_inicial_${caseId}${extension}`;
+      const fileName = `peticao_inicial_${caseId}.rtf`;
 
-      // Create download link
-      const url = URL.createObjectURL(data);
+      const blob = new Blob([data], { type: 'application/rtf' });
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = fileName;
@@ -199,23 +108,15 @@ const Dashboard = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      // Show appropriate message based on file type
-      if (isDocx) {
-        toast({
-          title: "Download Concluído",
-          description: "Documento Word baixado com sucesso! Agora você pode editá-lo diretamente no Microsoft Word.",
-        });
-      } else if (!isRtf && !isDocx) {
-        toast({
-          title: "Download Concluído",
-          description: "Arquivo HTML baixado. Para melhor compatibilidade, novos documentos são gerados em formato Word (.docx).",
-          variant: "default",
-        });
-      }
+      toast({
+        title: "Download Concluído",
+        description: "Documento baixado com sucesso!",
+      });
+
     } catch (error) {
       toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao baixar o documento.",
+        title: "Erro no Download",
+        description: "Não foi possível baixar o documento. Tente novamente.",
         variant: "destructive",
       });
     }
@@ -228,14 +129,12 @@ const Dashboard = () => {
       completed: { label: "Concluído", variant: "default" as const },
       error: { label: "Erro", variant: "destructive" as const },
     };
-
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
-      {/* Header */}
       <header className="border-b bg-white shadow-soft">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -243,7 +142,7 @@ const Dashboard = () => {
               <Scale className="h-8 w-8" />
               <span className="text-xl font-bold">PleaCraft AI</span>
             </Link>
-            
+
             <div className="flex items-center gap-4">
               {profile && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -260,25 +159,19 @@ const Dashboard = () => {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="space-y-8">
-          {/* Welcome Section */}
           <div className="text-center space-y-4">
-            <h1 className="text-3xl font-bold text-foreground">
-              Meus Documentos Jurídicos
-            </h1>
+            <h1 className="text-3xl font-bold text-foreground">Meus Documentos Jurídicos</h1>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Gerencie seus documentos jurídicos de forma simples e eficiente. 
-              Crie novas petições ou acompanhe o status dos documentos em andamento.
+              Gerencie seus documentos jurídicos de forma simples e eficiente. Crie novas petições ou acompanhe o status dos documentos em andamento.
             </p>
           </div>
 
-          {/* Quick Actions */}
           <div className="flex justify-center">
-            <Button 
-              variant="hero" 
-              size="lg" 
+            <Button
+              variant="hero"
+              size="lg"
               onClick={() => navigate('/new-case')}
               className="shadow-medium hover:shadow-strong transition-all"
             >
@@ -287,7 +180,6 @@ const Dashboard = () => {
             </Button>
           </div>
 
-          {/* Cases List */}
           <Card className="shadow-medium border-0">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -308,12 +200,10 @@ const Dashboard = () => {
                   <FileText className="h-12 w-12 text-muted-foreground mx-auto" />
                   <div className="space-y-2">
                     <h3 className="text-lg font-medium">Nenhum documento criado ainda</h3>
-                    <p className="text-muted-foreground">
-                      Comece criando seu primeiro documento jurídico
-                    </p>
+                    <p className="text-muted-foreground">Comece criando seu primeiro documento jurídico</p>
                   </div>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => navigate('/new-case')}
                   >
                     <Plus className="h-4 w-4 mr-2" />
@@ -325,45 +215,30 @@ const Dashboard = () => {
                   {cases.map((caseItem) => (
                     <div
                       key={caseItem.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors gap-4"
                     >
                       <div className="space-y-1">
                         <h4 className="font-medium">{caseItem.document_type}</h4>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Calendar className="h-4 w-4" />
                           <span>
-                            {format(new Date(caseItem.created_at), "dd 'de' MMMM 'de' yyyy", {
-                              locale: ptBR,
-                            })}
+                            {format(new Date(caseItem.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                           </span>
                         </div>
                       </div>
-                      
-                      <div className="flex items-center gap-3">
+
+                      <div className="flex items-center gap-3 self-end sm:self-center">
                         {getStatusBadge(caseItem.status)}
-                        
+
                         {caseItem.status === 'completed' && caseItem.generated_document_url && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDownload(caseItem.generated_document_url!, caseItem.id)}
-                            >
-                              <Download className="h-4 w-4 mr-2" />
-                              Download
-                            </Button>
-                            {caseItem.generated_document_url.endsWith('.html') && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleRegenerate(caseItem.id)}
-                                className="ml-2"
-                              >
-                                <FileText className="h-4 w-4 mr-2" />
-                                Regenerar em Word
-                              </Button>
-                            )}
-                          </>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownload(caseItem.generated_document_url!, caseItem.id)}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </Button>
                         )}
                       </div>
                     </div>
