@@ -15,6 +15,8 @@ interface LegalCase {
   status: string;
   created_at: string;
   generated_document_url?: string;
+  case_data?: any;
+  facts_narrative?: string;
 }
 
 interface Profile {
@@ -102,6 +104,64 @@ const Dashboard = () => {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate('/');
+  };
+
+  const handleRegenerate = async (caseId: string) => {
+    try {
+      // Find the case
+      const caseToRegenerate = cases.find(c => c.id === caseId);
+      if (!caseToRegenerate) {
+        toast({
+          title: "Erro",
+          description: "Caso não encontrado.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Show loading toast
+      toast({
+        title: "Regenerando Documento",
+        description: "Convertendo para formato Word... Isso pode levar alguns segundos.",
+      });
+
+      // Call the generate-document function again with existing data
+      const { data, error } = await supabase.functions.invoke('generate-document', {
+        body: {
+          caseData: caseToRegenerate.case_data,
+          factsNarrative: caseToRegenerate.facts_narrative,
+          files: [],
+          regenerate: true,
+          caseId: caseId
+        },
+      });
+
+      if (error) {
+        console.error('Error regenerating document:', error);
+        toast({
+          title: "Erro na Regeneração",
+          description: "Não foi possível regenerar o documento.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Refresh the cases list
+      await loadCases();
+
+      toast({
+        title: "Documento Regenerado!",
+        description: "O documento foi convertido para formato Word com sucesso.",
+      });
+
+    } catch (error) {
+      console.error('Error regenerating document:', error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao regenerar o documento.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDownload = async (documentUrl: string, caseId: string) => {
@@ -283,14 +343,27 @@ const Dashboard = () => {
                         {getStatusBadge(caseItem.status)}
                         
                         {caseItem.status === 'completed' && caseItem.generated_document_url && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDownload(caseItem.generated_document_url!, caseItem.id)}
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download
-                          </Button>
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDownload(caseItem.generated_document_url!, caseItem.id)}
+                            >
+                              <Download className="h-4 w-4 mr-2" />
+                              Download
+                            </Button>
+                            {caseItem.generated_document_url.endsWith('.html') && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleRegenerate(caseItem.id)}
+                                className="ml-2"
+                              >
+                                <FileText className="h-4 w-4 mr-2" />
+                                Regenerar em Word
+                              </Button>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>

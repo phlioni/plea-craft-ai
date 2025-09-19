@@ -181,53 +181,86 @@ serve(async (req) => {
     console.log('User authenticated:', user.id);
 
     // Parse request body
-    const { caseData, factsNarrative, files } = await req.json();
+    const { caseData, factsNarrative, files, regenerate, caseId } = await req.json();
     
     console.log('Request data received:', {
       hasCase: !!caseData,
       hasFacts: !!factsNarrative,
-      fileCount: files?.length || 0
+      fileCount: files?.length || 0,
+      isRegeneration: !!regenerate,
+      caseId: caseId
     });
 
-    // Create legal case record
-    const { data: legalCase, error: caseError } = await supabase
-      .from('legal_cases')
-      .insert({
-        user_id: user.id,
-        document_type: 'Petição Inicial Juizado Especial Cível',
-        case_data: caseData,
-        facts_narrative: factsNarrative,
-        status: 'processing'
-      })
-      .select()
-      .single();
+    let legalCase;
+    
+    if (regenerate && caseId) {
+      // For regeneration, get the existing case
+      const { data: existingCase, error: fetchError } = await supabase
+        .from('legal_cases')
+        .select('*')
+        .eq('id', caseId)
+        .eq('user_id', user.id)
+        .single();
 
-    if (caseError) {
-      console.error('Error creating legal case:', caseError);
-      throw new Error('Failed to create legal case record');
+      if (fetchError || !existingCase) {
+        console.error('Error fetching existing case:', fetchError);
+        throw new Error('Caso não encontrado');
+      }
+
+      legalCase = existingCase;
+      
+      // Update status to processing
+      await supabase
+        .from('legal_cases')
+        .update({ status: 'processing' })
+        .eq('id', caseId);
+        
+    } else {
+      // Create new legal case record
+      const { data: newCase, error: caseError } = await supabase
+        .from('legal_cases')
+        .insert({
+          user_id: user.id,
+          document_type: 'Petição Inicial Juizado Especial Cível',
+          case_data: caseData,
+          facts_narrative: factsNarrative,
+          status: 'processing'
+        })
+        .select()
+        .single();
+
+      if (caseError) {
+        console.error('Error creating legal case:', caseError);
+        throw new Error('Failed to create legal case record');
+      }
+
+      legalCase = newCase;
     }
 
     console.log('Legal case created:', legalCase.id);
 
-    // Prepare the prompt for OpenAI
+    // Prepare the prompt for OpenAI using data from case
+    const caseInfo = legalCase.case_data;
+    const narrative = legalCase.facts_narrative;
+    
     const prompt = `Você é um assistente jurídico especializado em redigir petições iniciais para o Juizado Especial Cível brasileiro. 
 
 Com base nas informações fornecidas abaixo, redija uma petição inicial profissional e bem estruturada:
 
 **DADOS DO REQUERENTE (AUTOR):**
-- Nome: ${caseData.authorName}
-- CPF: ${caseData.authorCpf}
-- Endereço: ${caseData.authorAddress}
-- Email: ${caseData.authorEmail}
-- Telefone: ${caseData.authorPhone}
+- Nome: ${caseInfo.authorName}
+- CPF: ${caseInfo.authorCpf}
+- Endereço: ${caseInfo.authorAddress}
+- Email: ${caseInfo.authorEmail}
+- Telefone: ${caseInfo.authorPhone}
 
 **DADOS DO REQUERIDO (RÉU):**
-- Nome/Razão Social: ${caseData.defendantName}
-${caseData.defendantDocument ? `- CPF/CNPJ: ${caseData.defendantDocument}` : ''}
-${caseData.defendantAddress ? `- Endereço: ${caseData.defendantAddress}` : ''}
+- Nome/Razão Social: ${caseInfo.defendantName}
+${caseInfo.defendantDocument ? `- CPF/CNPJ: ${caseInfo.defendantDocument}` : ''}
+${caseInfo.defendantAddress ? `- Endereço: ${caseInfo.defendantAddress}` : ''}
 
 **RELATO DOS FATOS:**
-${factsNarrative}
+${narrative}
 
 **INSTRUÇÕES PARA A REDAÇÃO:**
 1. Utilize linguagem jurídica adequada mas acessível
