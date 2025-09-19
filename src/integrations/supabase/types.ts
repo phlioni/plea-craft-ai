@@ -14,7 +14,97 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      legal_cases: {
+        Row: {
+          case_data: Json
+          created_at: string
+          document_type: string
+          facts_narrative: string
+          generated_document_url: string | null
+          id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          case_data?: Json
+          created_at?: string
+          document_type?: string
+          facts_narrative: string
+          generated_document_url?: string | null
+          id?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          case_data?: Json
+          created_at?: string
+          document_type?: string
+          facts_narrative?: string
+          generated_document_url?: string | null
+          id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_cases_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      uploaded_files: {
+        Row: {
+          case_id: string
+          file_name: string
+          id: string
+          storage_path: string
+          uploaded_at: string
+        }
+        Insert: {
+          case_id: string
+          file_name: string
+          id?: string
+          storage_path: string
+          uploaded_at?: string
+        }
+        Update: {
+          case_id?: string
+          file_name?: string
+          id?: string
+          storage_path?: string
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "uploaded_files_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "legal_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
